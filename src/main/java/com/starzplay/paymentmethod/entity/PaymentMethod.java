@@ -2,12 +2,12 @@ package com.starzplay.paymentmethod.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.starzplay.paymentmethod.constants.PaymentType;
-import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.persistence.*;
 import java.util.Set;
 
 /**

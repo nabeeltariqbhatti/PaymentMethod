@@ -2,8 +2,6 @@ package com.starzplay.paymentmethod.dto;
 
 import com.starzplay.paymentmethod.constants.Currency;
 import com.starzplay.paymentmethod.constants.Duration;
-import com.starzplay.paymentmethod.entity.PaymentMethod;
-import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

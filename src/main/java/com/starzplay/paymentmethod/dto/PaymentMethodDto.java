@@ -1,11 +1,7 @@
 package com.starzplay.paymentmethod.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.starzplay.paymentmethod.constants.PaymentType;
-import com.starzplay.paymentmethod.entity.PaymentPlan;
-import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Set;

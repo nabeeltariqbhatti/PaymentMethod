@@ -2,12 +2,12 @@ package com.starzplay.paymentmethod.entity;
 
 import com.starzplay.paymentmethod.constants.Currency;
 import com.starzplay.paymentmethod.constants.Duration;
-import jakarta.persistence.*;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import javax.persistence.*;
 import java.math.BigDecimal;
 import java.util.Set;
 
