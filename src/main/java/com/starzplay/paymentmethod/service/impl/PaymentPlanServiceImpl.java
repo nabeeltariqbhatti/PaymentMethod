@@ -1,13 +1,12 @@
 package com.starzplay.paymentmethod.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.starzplay.paymentmethod.dto.PaymentMethodDto;
-import com.starzplay.paymentmethod.dto.PaymentPlanDto;
 import com.starzplay.paymentmethod.exception.InternalServerException;
 import com.starzplay.paymentmethod.exception.PaymentResourceNotFoundException;
 import com.starzplay.paymentmethod.repo.PaymentMethodRepo;
 import com.starzplay.paymentmethod.repo.PaymentPlanRepo;
 import com.starzplay.paymentmethod.service.PaymentPlanService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -24,10 +23,12 @@ import java.util.Objects;
 @Service
 public class PaymentPlanServiceImpl implements PaymentPlanService {
     private final PaymentMethodRepo paymentMethodRepo;
+    private final ObjectMapper objectMapper;
 
     private final PaymentPlanRepo paymentPlanRepo;
-    public PaymentPlanServiceImpl(PaymentMethodRepo paymentMethodRepo, PaymentPlanRepo paymentPlanRepo) {
+    public PaymentPlanServiceImpl(PaymentMethodRepo paymentMethodRepo, ObjectMapper objectMapper, PaymentPlanRepo paymentPlanRepo) {
         this.paymentMethodRepo = paymentMethodRepo;
+        this.objectMapper = objectMapper;
         this.paymentPlanRepo = paymentPlanRepo;
     }
 
@@ -43,11 +44,7 @@ public class PaymentPlanServiceImpl implements PaymentPlanService {
                             paymentMethod.getPaymentPlans().stream()
                                     .anyMatch(paymentPlan ->
                                             paymentPlan.getPaymentPlanId().equals(Long.valueOf(id)))).
-                    map(paymentMethod -> {
-                PaymentMethodDto paymentMethodDto = new PaymentMethodDto();
-                BeanUtils.copyProperties(paymentMethod,paymentMethodDto);
-                return  paymentMethodDto;
-            }).forEach(paymentMethodDtos::add);
+                    map(paymentMethod -> objectMapper.convertValue(paymentMethod,PaymentMethodDto.class)).forEach(paymentMethodDtos::add);
             return ResponseEntity.status(HttpStatus.OK).body(paymentMethodDtos);
         }catch (Exception exception){
             throw new InternalServerException("Error while fetching payment method", HttpStatus.INTERNAL_SERVER_ERROR);

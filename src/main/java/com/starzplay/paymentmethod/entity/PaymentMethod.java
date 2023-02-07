@@ -2,13 +2,12 @@ package com.starzplay.paymentmethod.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.starzplay.paymentmethod.constants.PaymentType;
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import javax.persistence.*;
-import java.util.Set;
+import java.util.List;
 
 /**
  * @author: Nabeel Tariq Bhatti
@@ -19,7 +18,6 @@ import java.util.Set;
 @Entity
 @Table(name = "payment_methods")
 @NoArgsConstructor
-@EqualsAndHashCode
 public class PaymentMethod {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -38,15 +36,15 @@ public class PaymentMethod {
             name = "payment_method_plans",
            joinColumns = @JoinColumn(
                     name = "payment_method_id",
-                    referencedColumnName = "id"
+                    referencedColumnName = "payment_method_id"
             ),
             inverseJoinColumns = @JoinColumn(
                     name="payment_plan_id",
-                    referencedColumnName = "id"
+                    referencedColumnName = "payment_plan_id"
             )
     )
-    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private Set<PaymentPlan> paymentPlans;
+    @ManyToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<PaymentPlan> paymentPlans;
 
 
 

@@ -1,10 +1,12 @@
 package com.starzplay.paymentmethod.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonRootName;
 import com.starzplay.paymentmethod.constants.PaymentType;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Set;
+import java.util.List;
 
 /**
  * @author: Nabeel Tariq Bhatti
@@ -12,14 +14,16 @@ import java.util.Set;
  */
 @Getter
 @Setter
+@JsonRootName("paymentMethods")
 public class PaymentMethodDto {
 
+    @JsonIgnore
     private Long id;
 
     private String name;
     private String displayName;
     private PaymentType paymentType;
-    private Set<PaymentPlanDto> paymentPlans;
+    private List<PaymentPlanDto> paymentPlans;
 
 
 

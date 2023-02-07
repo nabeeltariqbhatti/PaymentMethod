@@ -1,23 +1,24 @@
 package com.starzplay.paymentmethod.service.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.starzplay.paymentmethod.Utils.Util;
 import com.starzplay.paymentmethod.constants.Constants;
 import com.starzplay.paymentmethod.dto.PaymentMethodDto;
-import com.starzplay.paymentmethod.dto.PaymentPlanDto;
+import com.starzplay.paymentmethod.dto.PaymentMethodResponse;
 import com.starzplay.paymentmethod.entity.PaymentMethod;
-import com.starzplay.paymentmethod.entity.PaymentPlan;
 import com.starzplay.paymentmethod.exception.InternalServerException;
 import com.starzplay.paymentmethod.exception.PaymentResourceNotFoundException;
 import com.starzplay.paymentmethod.repo.PaymentMethodRepo;
+import com.starzplay.paymentmethod.repo.PaymentPlanRepo;
 import com.starzplay.paymentmethod.service.PaymentMethodService;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.net.InetAddress;
 import java.net.URI;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -29,36 +30,35 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
 
     private final PaymentMethodRepo paymentMethodRepo;
 
+    private final PaymentPlanRepo paymentPlanRepo;
+    private final ObjectMapper objectMapper;
     @Autowired
-    public PaymentMethodServiceImpl(PaymentMethodRepo paymentMethodRepo) {
+    public PaymentMethodServiceImpl(PaymentMethodRepo paymentMethodRepo, PaymentPlanRepo paymentPlanRepo, ObjectMapper objectMapper, Util utils) {
         this.paymentMethodRepo = paymentMethodRepo;
+        this.paymentPlanRepo = paymentPlanRepo;
+        this.objectMapper = objectMapper;
     }
 
     @Override
     public ResponseEntity<? extends Object> getAllPaymentMethods() {
-        List<PaymentMethodDto>  paymentMethodDtos = new LinkedList<>();
         try{
-            paymentMethodRepo.findAll().stream().map(paymentMethod -> {
-                PaymentMethodDto paymentMethodDto = new PaymentMethodDto();
-                BeanUtils.copyProperties(paymentMethod,paymentMethodDto);
-                return  paymentMethodDto;
-            }).forEach(paymentMethodDtos::add);
-            return  ResponseEntity.status(HttpStatus.OK).body(paymentMethodDtos);
+            List<PaymentMethodDto> paymentMethodsDtos = Util.mapPaymentMethodsToPaymentMethodsDto(paymentMethodRepo.findAll(),objectMapper);
+            PaymentMethodResponse paymentMethodResponse = new PaymentMethodResponse();
+            paymentMethodResponse.setPaymentMethods(paymentMethodsDtos);
+            return  ResponseEntity.status(HttpStatus.OK).body(paymentMethodResponse);
         }catch (Exception exception){
             throw new InternalServerException("Error while fetching payment method", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+
+
     @Override
     public ResponseEntity<? extends Object> getByPaymentMethodName(String name) {
-
-        List<PaymentMethodDto>  paymentMethodDtos = new LinkedList<>();
         try{
-            paymentMethodRepo.findPaymentMethodByName(name).stream().map(paymentMethod -> {
-                PaymentMethodDto paymentMethodDto = new PaymentMethodDto();
-                BeanUtils.copyProperties(paymentMethod,paymentMethodDto);
-                return  paymentMethodDto;
-            }).forEach(paymentMethodDtos::add);
+            List<PaymentMethodDto> paymentMethodDtos = Util.mapPaymentMethodsToPaymentMethodsDto(paymentMethodRepo.findPaymentMethodByName(name), objectMapper);
+            PaymentMethodResponse paymentMethodResponse = new PaymentMethodResponse();
+            paymentMethodResponse.setPaymentMethods(paymentMethodDtos);
             return ResponseEntity.status(HttpStatus.OK).body(paymentMethodDtos);
         }catch (Exception exception){
             throw new InternalServerException("Error while fetching payment method", HttpStatus.INTERNAL_SERVER_ERROR);
@@ -71,23 +71,21 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
 
     @Override
     public ResponseEntity<PaymentMethodDto> updatePaymentMethod(Long id, PaymentMethodDto paymentMethod) {
-        PaymentMethod paymentMethodDb = paymentMethodRepo.findById(id).orElseThrow(()-> new PaymentResourceNotFoundException("No PaymentMethod found with this id ", HttpStatus.NO_CONTENT));
-
-        try{
-            for (PaymentPlanDto paymentPlan : paymentMethod.getPaymentPlans()) {
-                PaymentPlan paymentPlanEntity = new PaymentPlan();
-                BeanUtils.copyProperties(paymentPlan,paymentPlanEntity);
-                paymentMethodDb.getPaymentPlans().add(paymentPlanEntity);
-                paymentPlanEntity.getPaymentMethods().add(paymentMethodDb);
+        PaymentMethod paymentMethodDb = paymentMethodRepo.findById(id).orElseThrow(() ->
+                new PaymentResourceNotFoundException("No PaymentMethod found with this id ", HttpStatus.NO_CONTENT));
+        PaymentMethod paymentMethodNew = objectMapper.convertValue(paymentMethod, PaymentMethod.class);
+        paymentMethodNew.setId(paymentMethodDb.getId());
+        try {
+            if(paymentMethodNew.getPaymentPlans()!=null && paymentMethodNew.getPaymentPlans().size()>0){
+                paymentMethodNew.setPaymentPlans(paymentPlanRepo.saveAll(paymentMethodNew.getPaymentPlans()));
             }
-              paymentMethodRepo.save(paymentMethodDb);
+            paymentMethodRepo.save(paymentMethodNew);
             return ResponseEntity.noContent().build();
-        }catch (Exception exception){
+        } catch (Exception exception) {
             exception.printStackTrace();
             throw new InternalServerException("Error while updating payment method", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-
     @Override
     public ResponseEntity<?> deletePaymentMethod(Long id) {
         PaymentMethod paymentMethod = paymentMethodRepo.findById(id).orElseThrow(()->
@@ -103,12 +101,13 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
             return ResponseEntity.badRequest().build();
         }
         try{
-            PaymentMethod paymentMethod = new PaymentMethod();
-            BeanUtils.copyProperties(paymentMethodDto,paymentMethod);
+            PaymentMethod paymentMethod = objectMapper.convertValue(paymentMethodDto,PaymentMethod.class);
             PaymentMethod save = paymentMethodRepo.save(paymentMethod);
+            InetAddress inetAddress = InetAddress.getLocalHost();
+            String hostAddress = inetAddress.getHostAddress();
             return ResponseEntity
                     .created(
-                    URI.create(String.format(Constants.BASE_ADDRESS_API_PAYMENT_METHOD.concat("/")+"%d",paymentMethod.getId()))).body(paymentMethod);
+                    URI.create(String.format(hostAddress+Constants.BASE_ADDRESS_API_PAYMENT_METHOD.concat("/")+"%d",paymentMethod.getId()))).body(paymentMethod);
         }catch (Exception exception){
             throw new InternalServerException("Error while fetching payment method", HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -118,7 +117,7 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
     @Override
     public ResponseEntity<? extends Object> getPaymentMethod(Long id) {
         try{
-            return ResponseEntity.ok(paymentMethodRepo.findById(id));
+            return ResponseEntity.ok(paymentMethodRepo.findById(id).get());
         }catch (Exception exception){
             throw new InternalServerException("Error while fetching payment method", HttpStatus.INTERNAL_SERVER_ERROR);
         }
