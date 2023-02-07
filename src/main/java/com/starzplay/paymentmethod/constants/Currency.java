@@ -5,4 +5,5 @@ package com.starzplay.paymentmethod.constants;
  * @created: 2023/02/07
  */
 public enum Currency {
+    USD,SAR
 }
