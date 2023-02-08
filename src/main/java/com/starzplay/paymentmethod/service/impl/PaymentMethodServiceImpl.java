@@ -115,14 +115,18 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
         }
         try{
             PaymentMethod paymentMethod = objectMapper.convertValue(paymentMethodDto,PaymentMethod.class);
+            if(paymentMethod.getPaymentPlans()!=null){
+                List<PaymentPlan> paymentPlans = paymentPlanRepo.saveAll(paymentMethod.getPaymentPlans());
+                paymentMethod.setPaymentPlans(null);
+                paymentMethod.setPaymentPlans(paymentPlans);
+            }
             PaymentMethod save = paymentMethodRepo.save(paymentMethod);
-            InetAddress inetAddress = InetAddress.getLocalHost();
-            String hostAddress = inetAddress.getHostAddress();
             return ResponseEntity
                     .created(
-                    URI.create(String.format(hostAddress+Constants.BASE_ADDRESS_API_PAYMENT_METHOD.concat("/")+"%d",paymentMethod.getId()))).body(paymentMethod);
+                            URI.create(String.format(Constants.LOCAL_HOST+Constants.BASE_ADDRESS_API_PAYMENT_METHOD.concat("/")+"%d",paymentMethod.getId())))
+                    .body(objectMapper.convertValue(save,PaymentMethodDto.class));
         }catch (Exception exception){
-            throw new InternalServerException("Error while fetching payment method", HttpStatus.INTERNAL_SERVER_ERROR);
+            throw new InternalServerException("Error while creating payment method", HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
     }
