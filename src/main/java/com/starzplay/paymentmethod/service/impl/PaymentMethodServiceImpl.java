@@ -74,17 +74,31 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
         PaymentMethod paymentMethodDb = paymentMethodRepo.findById(id).orElseThrow(() ->
                 new PaymentResourceNotFoundException("No PaymentMethod found with this id ", HttpStatus.NO_CONTENT));
         PaymentMethod paymentMethodNew = objectMapper.convertValue(paymentMethod, PaymentMethod.class);
-        paymentMethodNew.setId(paymentMethodDb.getId());
+        paymentMethodNew.setId(id);
         try {
-            if(paymentMethodNew.getPaymentPlans()!=null && paymentMethodNew.getPaymentPlans().size()>0){
-                paymentMethodNew.setPaymentPlans(paymentPlanRepo.saveAll(paymentMethodNew.getPaymentPlans()));
+            if(paymentMethodNew.getPaymentPlans()==null){
+                paymentMethodNew.setPaymentPlans(new ArrayList<>());
             }
-            paymentMethodRepo.save(paymentMethodNew);
-            return ResponseEntity.noContent().build();
-        } catch (Exception exception) {
-            exception.printStackTrace();
-            throw new InternalServerException("Error while updating payment method", HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+            /**
+             * cascade type all
+             */
+            Iterator<PaymentPlan> iterator = paymentMethodDb.getPaymentPlans().iterator();
+            while (iterator.hasNext()){
+                for (PaymentPlanDto paymentPlan : paymentMethod.getPaymentPlans()) {
+                    if(paymentPlan.getPaymentPlanId()!=null &&
+                            paymentPlan.getPaymentPlanId().equals(iterator.next().getPaymentPlanId())){
+                        paymentPlanRepo.findById(paymentPlan.getPaymentPlanId()).orElseThrow(()->
+                                new PaymentResourceNotFoundException("no paymentplan having id " + paymentPlan.getPaymentPlanId(),
+                                        HttpStatus.NOT_FOUND));
+                        iterator.remove();
+                        break;
+                    }
+                }
+            }
+            paymentMethodNew.getPaymentPlans().addAll(paymentMethodDb.getPaymentPlans());
+            entityManager.detach(paymentMethodDb);
+            paymentMethodNew = paymentMethodRepo.save(paymentMethodNew);
+            return ResponseEntity.accepted().build();
     }
     @Override
     public ResponseEntity<?> deletePaymentMethod(Long id) {
