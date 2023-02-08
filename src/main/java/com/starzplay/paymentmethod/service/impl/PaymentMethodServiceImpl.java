@@ -96,7 +96,6 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
                 }
             }
             paymentMethodNew.getPaymentPlans().addAll(paymentMethodDb.getPaymentPlans());
-            entityManager.detach(paymentMethodDb);
             paymentMethodNew = paymentMethodRepo.save(paymentMethodNew);
             return ResponseEntity.accepted().build();
     }
