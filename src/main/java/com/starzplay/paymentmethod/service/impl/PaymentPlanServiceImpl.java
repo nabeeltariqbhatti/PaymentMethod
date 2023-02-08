@@ -32,19 +32,12 @@ public class PaymentPlanServiceImpl implements PaymentPlanService {
         this.paymentPlanRepo = paymentPlanRepo;
     }
 
-    @Override
+   @Override
     public ResponseEntity<? extends Object> getByPaymentMethodByPaymentPlanId(String id) {
-        List<PaymentMethodDto> paymentMethodDtos = new LinkedList<>();
         try{
-            paymentPlanRepo.findById(Long.valueOf(id)).orElseThrow(
-                    ()-> new PaymentResourceNotFoundException("No Payment Method associated with the given Payment Plan",
-                    HttpStatus.NOT_FOUND));
-            paymentMethodRepo.findAll().stream().filter(Objects::nonNull)
-                    .filter(paymentMethod -> paymentMethod.getPaymentPlans()!=null &&
-                            paymentMethod.getPaymentPlans().stream()
-                                    .anyMatch(paymentPlan ->
-                                            paymentPlan.getPaymentPlanId().equals(Long.valueOf(id)))).
-                    map(paymentMethod -> objectMapper.convertValue(paymentMethod,PaymentMethodDto.class)).forEach(paymentMethodDtos::add);
+            List<PaymentMethod> paymentMethodsByPlanId = paymentMethodRepo.getPaymentMethodsByPlanId(Long.valueOf(id));
+            List<PaymentMethodDto> paymentMethodDtos = objectMapper.convertValue(paymentMethodsByPlanId, new TypeReference<List<PaymentMethodDto>>() {
+            });
             return ResponseEntity.status(HttpStatus.OK).body(paymentMethodDtos);
         }catch (Exception exception){
             throw new InternalServerException("Error while fetching payment method", HttpStatus.INTERNAL_SERVER_ERROR);
