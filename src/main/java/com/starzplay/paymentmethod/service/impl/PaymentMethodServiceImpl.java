@@ -87,9 +87,6 @@ public class PaymentMethodServiceImpl implements PaymentMethodService {
                 for (PaymentPlanDto paymentPlan : paymentMethod.getPaymentPlans()) {
                     if(paymentPlan.getPaymentPlanId()!=null &&
                             paymentPlan.getPaymentPlanId().equals(iterator.next().getPaymentPlanId())){
-                        paymentPlanRepo.findById(paymentPlan.getPaymentPlanId()).orElseThrow(()->
-                                new PaymentResourceNotFoundException("no paymentplan having id " + paymentPlan.getPaymentPlanId(),
-                                        HttpStatus.NOT_FOUND));
                         iterator.remove();
                         break;
                     }
